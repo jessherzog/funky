@@ -7,7 +7,6 @@
 	This sketch uses p5.js for visual components and p5.Tone.min.js (the p5 version of Tone.js) 
 	which adds a p5 preload hook for buffer loading. 
 	-->
-
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 	
 	<script type="text/javascript" src="./scripts/Tone.js"></script>
@@ -15,6 +14,7 @@
 	<script type="text/javascript" src="./scripts/StartAudioContext.js"></script>
 	<script type="text/javascript" src="./scripts/Interface.js"></script>
 	<script type="text/javascript" src="./scripts/p5.js"></script>
+	<script type="text/javascript" src="./scripts/audiojs/audiojs/audio.min.js"></script>
 
 	<script type="text/javascript">
 		// jshint ignore: start
@@ -28,8 +28,16 @@
 			z-index: -1;
 		}
 	</style>
-	<div id="Content" class="FullScreen">
-	</div>
+
+	<script>
+	  audiojs.events.ready(function() {
+	    var as = audiojs.createAll();
+	  });
+	</script>
+
+
+
+	<div id="Content" class="FullScreen"></div>
 	<script id="p5" type="text/javascript">
 
 		function FunkyShape() {}
@@ -72,11 +80,10 @@
 		//using our FunkyShape class
 		//to create a funkyCircle class
 		var funkyCircle = new FunkyShape();
-
 		//creating an empty array
 		var funkySquare = [];
 		//and populating it with 3 FunkyShapes
-		for (var i = 0; i < 3; i++) {
+		for (var i = 0; i < 6; i++) {
 		    funkySquare[i] = new FunkyShape();
 		}
 
@@ -89,6 +96,7 @@
 		    rectMode(CENTER);
 		    //initializing our funky circle
 		    funkyCircle.init(0.01, 0.02, 0.0, 0.0, 400);
+		    
 		    //initializing our squares with random values
 		    //to ensure they don't follow the same path
 		    for (var i = 0; i < 3; i++) {
@@ -98,112 +106,52 @@
 		    }
 		}
 
-		var phase = 0;
-
 		function draw() {
 		    background(255);
+	
+			//drawing the kick wave at the bottom
 		    stroke(0);
-		    //drawing the kick wave at the bottom
-		    //it is composed of a simple sine wave that
-		    //changes in height with the kick envelope
 		    for (var i = 0; i < width; i++) {
-		        //scaling kickEnvelope value by 200 
-		        //since default is 0-1
+		        //scaling kickEnvelope value by 200, bc default is 0-1
 		        var kickValue = kickEnvelope.value * 200;
 		        //multiplying this value to scale the sine wave 
 		        //depending on x position
-		        var yDot = Math.sin((i / 60) + phase) * kickValue;
-		        point(i, height -150 + yDot);
+		        var yDot = Math.sin((i / 60)) * kickValue;
+		        point(i, height-450 + yDot);
 		    }
-		    //increasing phase means that the kick wave will 
-		    //not be standing and looks more dynamic
-		    phase += 1;
+
 		    //updating circle and square positions with 
 		    //bass and bleep envelope values
 		    var circlePos = funkyCircle.update(bassEnvelope.value);
+
 		    //circlePos returns x and y positions as an object
+		    strokeWeight(circlePos.radius);
 		    ellipse(circlePos.xPos, circlePos.yPos, circlePos.radius, circlePos.radius);
 		    stroke('red');
 		    for (var i = 0; i < 3; i++) {
 		        var squarePos = funkySquare[i].update(bleepEnvelope.value);
 		        rect(squarePos.xPos, squarePos.yPos, squarePos.radius, squarePos.radius);
+		        stroke('pink');
+		        strokeWeight(squarePos.radius);
 		    }
 		}
 	</script>
 
 	<script id="Song" type="text/javascript">
 
-		//HATS
-
-		//filtering the hi-hats a bit
-		//to make them sound nicer
-		var lowPass = new Tone.Filter({
-		    "frequency": 14000,
-		}).toMaster();
-
-		//we can make our own hi hats with 
-		//the noise synth and a sharp filter envelope
-		var openHiHat = new Tone.NoiseSynth({
-			"volume" : -10,
-		    "filter": {
-		        "Q": 1
-		    },
-		    "envelope": {
-		        "attack": 0.01,
-		        "decay": 0.3
-		    },
-		    "filterEnvelope": {
-		        "attack": 0.01,
-		        "decay": 0.03,
-		        "baseFrequency": 4000,
-		        "octaves": -2.5,
-		        "exponent": 4,
-		    }
-		}).connect(lowPass);
-
-		var openHiHatPart = new Tone.Part(function(time){
-			openHiHat.triggerAttack(time);
-		}, ["2*8n", "6*8n"]).start(0);
-
-		var closedHiHat = new Tone.NoiseSynth({
-			"volume" : -10,
-		    "filter": {
-		        "Q": 1
-		    },
-		    "envelope": {
-		        "attack": 0.01,
-		        "decay": 0.15
-		    },
-		    "filterEnvelope": {
-		        "attack": 0.01,
-		        "decay": 0.03,
-		        "baseFrequency": 4000,
-		        "octaves": -2.5,
-		        "exponent": 4,
-
-		    }
-		}).connect(lowPass);
-
-		var closedHatPart = new Tone.Part(function(time){
-			closedHiHat.triggerAttack(time);
-		}, ["0*8n", "1*16n", "1*8n", "3*8n", "4*8n", "5*8n", "7*8n", "8*8n"]).start(0);
-
 		//BASS
 		var bassEnvelope = new Tone.AmplitudeEnvelope({
 		    "attack": 0.01,
-		    "decay": 0.2,
+		    "decay": 0.5,
 		    "sustain": 0,
 		    "release": 0,
 		}).toMaster();
-
 		var bassFilter = new Tone.Filter({
-		    "frequency": 600,
-		    "Q": 8
+		    "frequency": 100,
+		    "Q": 18
 		});
-
 		var bass = new Tone.PulseOscillator("A2", 0.4).chain(bassFilter, bassEnvelope);
 		bass.start();
-
 		var bassPart = new Tone.Part(function(time, note){
 			bass.frequency.setValueAtTime(note, time);
 		    bassEnvelope.triggerAttack(time);
@@ -219,14 +167,11 @@
 		    "sustain": 0,
 		    "release": 0,
 		}).toMaster();
-
-
-		var bleep = new Tone.Oscillator("A4").connect(bleepEnvelope);
+		var bleep = new Tone.Oscillator("A5").connect(bleepEnvelope);
 		bleep.start();
-
 		var bleepLoop = new Tone.Loop(function(time){
 			 bleepEnvelope.triggerAttack(time);
-		}, "2n").start(0);
+		}, "4n").start(1);
 
 		//KICK
 		var kickEnvelope = new Tone.AmplitudeEnvelope({
@@ -273,5 +218,8 @@
 			});
 		});
 	</script>
+
+		<audio src="./pants.mp3" preload="auto" />
+
 </body>
 </html>
